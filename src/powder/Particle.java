@@ -13,5 +13,6 @@ abstract public class Particle extends Point {
 
   public int mass = 0;
   public boolean gravity = false;
+  public Vector2D velocity = new Vector2D(0, 0);
 
 }

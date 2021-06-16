@@ -106,7 +106,8 @@ public class Main extends JFrame {
             p.pointSet.iterator().forEachRemaining((point) -> {
               p.img.setRGB(point.x, point.y, Color.white.getRGB());
               var par = (Particle) point;
-              var v = ParticleMath.updateVector(par.mass);
+              var v = ParticleMath.updateVector(par.mass, par.velocity);
+              par.velocity = v;
               par.setLocation(point.x + v.x, point.y + v.y);
             });
             p.repaint();

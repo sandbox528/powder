@@ -1,15 +1,15 @@
 package powder;
 
 public enum CONST {
-  GRAVITY(1);
+  GRAVITY(0.2);
 
-  private int val;
+  private double val;
 
-  CONST(int val) {
+  CONST(double val) {
     this.val = val;
   }
 
-  public int getVal() {
+  public double getVal() {
     return val;
   }
 
