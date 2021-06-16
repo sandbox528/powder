@@ -4,8 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.ArrayList;
 
 import javax.swing.*;
 
@@ -15,20 +14,43 @@ import javax.swing.*;
 
 public class Main extends JFrame {
 
+  public static Vector2D updateVector(Point p) {
+    return new Vector2D(0, 2);
+  }
+
   class Panel extends JPanel {
 
     BufferedImage img;
     Graphics2D imgg;
-
+    Class<? extends Point> selectedPoint;
+    ArrayList<Class<? extends Point>> pointTypes = new ArrayList<>();
+    int i = 0;
     public HashSet<Point> pointSet;
 
     public Panel() {
 
       setDoubleBuffered(true);
       img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_BGR);
+
+      pointTypes.add(Heavy.class);
+      pointTypes.add(Light.class);
+
+      selectedPoint = pointTypes.get(0);
       pointSet = new HashSet<>();
       imgg = img.createGraphics();
       // https://docs.oracle.com/javase/tutorial/uiswing/painting/step3.html
+
+      addMouseWheelListener(new MouseWheelListener() {
+        @Override
+        public void mouseWheelMoved(MouseWheelEvent e) {
+          i++;
+          if (i >= pointTypes.size()) {
+            i = 0;
+          }
+          selectedPoint = pointTypes.get(i);
+        }
+      });
+
       addMouseMotionListener(new MouseMotionListener() {
         @Override
         public void mouseMoved(MouseEvent e) {
@@ -36,7 +58,14 @@ public class Main extends JFrame {
 
         @Override
         public void mouseDragged(MouseEvent e) {
-          pointSet.add(new Point(e.getX(), e.getY()));
+
+          try {
+            Point p = (Point) selectedPoint.getDeclaredConstructors()[0].newInstance(e.getX(), e.getY());
+            pointSet.add(p);
+          } catch (Exception ex) {
+            ex.printStackTrace();
+          }
+
         }
       });
     }
@@ -45,6 +74,8 @@ public class Main extends JFrame {
     protected void paintComponent(Graphics g) {
       super.paintComponent(g);
       g.drawImage(img, 0, 0, null);
+      g.setColor(Color.white);
+      g.drawString(selectedPoint.getName(), 20, 50);
     }
 
     @Override
@@ -57,7 +88,7 @@ public class Main extends JFrame {
 
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setResizable(false);
-    Panel p = new Panel();
+    var p = new Panel();
     getContentPane().add(p);
     pack();
     setVisible(true);
@@ -68,27 +99,27 @@ public class Main extends JFrame {
       protected Void doInBackground() throws Exception {
         // https://docs.oracle.com/javase/tutorial/uiswing/concurrency/interim.html
         while (!isCancelled()) {
-          p.pointSet.removeIf((p) -> {
-            return p.x < 0 || p.x >= 300 || p.y < 0 || p.y >= 300;
-          });
-
-          p.pointSet.iterator().forEachRemaining((point) -> {
-            p.img.setRGB(point.x, point.y, Color.white.getRGB());
-            // Possible entry point for vector calculations
-            point.setLocation(point.x, point.y + 1);
-          });
-
-          p.repaint();
-          p.img.setRGB(0, 0, 300, 300, new int[900], 0, 0);
-          Thread.sleep(20);
+          try {
+            p.pointSet.removeIf((p) -> {
+              return p.x < 0 || p.x >= 300 || p.y < 0 || p.y >= 300;
+            });
+            p.pointSet.iterator().forEachRemaining((point) -> {
+              p.img.setRGB(point.x, point.y, Color.white.getRGB());
+              var par = (Particle) point;
+              var v = ParticleMath.updateVector(par.mass);
+              par.setLocation(point.x + v.x, point.y + v.y);
+            });
+            p.repaint();
+            p.img.setRGB(0, 0, 300, 300, new int[900], 0, 0);
+            Thread.sleep(20);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
         }
         return null;
       }
-
     };
-
     worker.execute();
-
   }
 
   public static void main(String[] args) {
